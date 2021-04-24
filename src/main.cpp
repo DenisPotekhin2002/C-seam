@@ -4,7 +4,7 @@
 #include <fstream>
 #include <iostream>
 
-static std::vector<std::vector<Image::Pixel>> ReadImageFromCSV(std::ifstream & input)
+std::vector<std::vector<Image::Pixel>> ReadImageFromCSV(std::ifstream & input)
 {
     size_t width, height;
     input >> width >> height;
@@ -21,7 +21,7 @@ static std::vector<std::vector<Image::Pixel>> ReadImageFromCSV(std::ifstream & i
     return table;
 }
 
-static void WriteImageToCSV(const SeamCarver & carver, std::ofstream & output)
+void WriteImageToCSV(const SeamCarver & carver, std::ofstream & output)
 {
     const size_t width = carver.GetImageWidth();
     const size_t height = carver.GetImageHeight();
@@ -37,6 +37,7 @@ static void WriteImageToCSV(const SeamCarver & carver, std::ofstream & output)
 
 int main(int argc, char * argv[])
 {
+    std::cerr << "here" << std::endl;
     // Check command line arguments
     const size_t expectedAmountOfArgs = 3;
     if (argc != expectedAmountOfArgs) {
@@ -57,6 +58,11 @@ int main(int argc, char * argv[])
         for (size_t i = 0; i < pixelsToDelete; ++i) {
             std::vector<size_t> seam = carver.FindVerticalSeam();
             carver.RemoveVerticalSeam(seam);
+            std::cout << "width = " << carver.GetImageWidth() << ", height = " << carver.GetImageHeight() << std::endl;
+        }
+        for (size_t i = 0; i < pixelsToDelete; ++i) {
+            std::vector<size_t> seam = carver.FindHorizontalSeam();
+            carver.RemoveHorizontalSeam(seam);
             std::cout << "width = " << carver.GetImageWidth() << ", height = " << carver.GetImageHeight() << std::endl;
         }
         std::ofstream outputFile(argv[2]);

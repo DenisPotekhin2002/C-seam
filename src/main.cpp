@@ -36,60 +36,34 @@ void WriteImageToCSV(const SeamCarver & carver, std::ofstream & output)
     }
 }
 
+void regressiontest()
+{
+    const Image test({{{186, 73, 178}, {50, 93, 116}, {252, 102, 248}}, {{237, 102, 135}, {64, 174, 101}, {247, 9, 24}}, {{153, 109, 248}, {148, 123, 173}, {31, 158, 239}}, {{125, 81, 34}, {179, 100, 40}, {59, 156, 206}}, {{252, 199, 253}, {38, 117, 54}, {220, 120, 156}}});
+    SeamCarver carver(test);
+    std::vector<size_t> hor = carver.FindHorizontalSeam();
+    std::vector<size_t> vert = carver.FindVerticalSeam();
+    std::cout << "energyMap : " << std::endl;
+    for (size_t i = 0; i < test.m_table.size(); i++) {
+        for (size_t j = 0; j < test.m_table[0].size(); j++) {
+            std::cout << carver.GetPixelEnergy(i, j) << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << "horSeam : ";
+    for (const auto i : hor) {
+        std::cout << i << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "vertSeam : ";
+    for (const auto i : vert) {
+        std::cout << i << " ";
+    }
+    std::cout << std::endl;
+}
+
 int main(int argc, char * argv[])
 {
-    //something like a regression test
-    // (mistake in previous version was caused by initializing res as int instead of double)
-    // here is a part of algorithm, which is identical to the algorithm I use in SeamCarver to find a vertical seam
-    std::vector<std::vector<double>> GetPixelEnergy = {{167, 140.64494303031304, 270, 214, 185, 143.89232085139221, 173}, {119.17214439624723, 205, 165, 165, 251, 115.21284650593439, 173}};
-    std::vector<std::vector<double>> energies;
-    std::vector<std::vector<std::vector<size_t>>> seams;
-    double GetImageHeight = 2;
-    double GetImageWidth = 7;
-    for (size_t row = 0; row < GetImageHeight; row++) {
-        energies.push_back(std::vector<double>());
-        seams.push_back(std::vector<std::vector<size_t>>());
-        for (size_t col = 0; col < GetImageWidth; col++) {
-            energies[row].push_back(0.0);
-            seams[row].push_back(std::vector<size_t>());
-        }
-    }
-    for (size_t col = 0; col < GetImageWidth; col++) {
-        energies[0][col] = GetPixelEnergy[0][col];
-        seams[0][col].push_back(col);
-    }
-    for (size_t row = 1; row < GetImageHeight; row++) {
-        for (size_t col = 0; col < GetImageWidth; col++) {
-            double temp = energies[row - 1][col];
-            std::vector tempseam = seams[row - 1][col];
-            if (col > 0 && energies[row - 1][col - 1] < temp) {
-                temp = energies[row - 1][col - 1];
-                tempseam = seams[row - 1][col - 1];
-            }
-            if (col < GetImageWidth - 1 && energies[row - 1][col + 1] < temp) {
-                temp = energies[row - 1][col + 1];
-                tempseam = seams[row - 1][col + 1];
-            }
-            energies[row][col] = temp + GetPixelEnergy[row][col];
-            seams[row][col] = tempseam;
-            seams[row][col].push_back(col);
-        }
-    }
-    std::cerr << "Energy map:" << std::endl;
-    for (const auto & i : energies) {
-        for (const auto j : i) {
-            std::cerr << j << " ";
-        }
-        std::cerr << std::endl;
-    }
-    double res = std::min_element(energies[GetImageHeight - 1].begin(), energies[GetImageHeight - 1].end()) - energies[GetImageHeight - 1].begin();
-    std::vector<size_t> resseam = seams[GetImageHeight - 1][res];
-    std::cerr << "seam: ";
-    for (const auto i : resseam) {
-        std::cerr << i << " ";
-    }
-    std::cerr << std::endl;
-    //the end of regression test, start of main
+    //regressiontest();
 
     // Check command line arguments
     const size_t expectedAmountOfArgs = 3;

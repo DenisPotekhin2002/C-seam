@@ -3,43 +3,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cmath>
-#include <iostream>
-
-#define find(width, height, energy)                                                                                      \
-    std::vector<std::vector<double>> energies;                                                                           \
-    std::vector<std::vector<std::vector<size_t>>> seams;                                                                 \
-    for (size_t col = 0; col < width; col++) {                                                                           \
-        energies.push_back(std::vector<double>());                                                                       \
-        seams.push_back(std::vector<std::vector<size_t>>());                                                             \
-        for (size_t row = 0; row < height; row++) {                                                                      \
-            energies[col].push_back(0.0);                                                                                \
-            seams[col].push_back(std::vector<size_t>());                                                                 \
-        }                                                                                                                \
-    }                                                                                                                    \
-    for (size_t row = 0; row < height; row++) {                                                                          \
-        energies[0][row] = energy(0, row);                                                                               \
-        seams[0][row].push_back(row);                                                                                    \
-    }                                                                                                                    \
-    for (size_t col = 1; col < width; col++) {                                                                           \
-        for (size_t row = 0; row < height; row++) {                                                                      \
-            double temp = energies[col - 1][row];                                                                        \
-            std::vector tempseam = seams[col - 1][row];                                                                  \
-            if (row > 0 && energies[col - 1][row - 1] < temp) {                                                          \
-                temp = energies[col - 1][row - 1];                                                                       \
-                tempseam = seams[col - 1][row - 1];                                                                      \
-            }                                                                                                            \
-            if (row < height - 1 && energies[col - 1][row + 1] < temp) {                                                 \
-                temp = energies[col - 1][row + 1];                                                                       \
-                tempseam = seams[col - 1][row + 1];                                                                      \
-            }                                                                                                            \
-            energies[col][row] = temp + energy(col, row);                                                                \
-            seams[col][row] = tempseam;                                                                                  \
-            seams[col][row].push_back(row);                                                                              \
-        }                                                                                                                \
-    }                                                                                                                    \
-    double res = std::min_element(energies[width - 1].begin(), energies[width - 1].end()) - energies[width - 1].begin(); \
-    Seam resseam = seams[width - 1][res];                                                                                \
-    return resseam;
+#include <functional>
 
 SeamCarver::SeamCarver(Image image)
     : m_image(std::move(image))
@@ -58,12 +22,7 @@ size_t SeamCarver::GetImageWidth() const
 
 size_t SeamCarver::GetImageHeight() const
 {
-    if (m_image.m_table.empty()) {
-        return 0;
-    }
-    else {
-        return m_image.m_table[0].size();
-    }
+    return (m_image.m_table.empty() ? 0 : m_image.m_table[0].size());
 }
 
 double SeamCarver::GetPixelEnergy(size_t columnId, size_t rowId) const
@@ -81,22 +40,59 @@ double SeamCarver::GetPixelEnergy(size_t columnId, size_t rowId) const
     double yr = y1.m_red - y2.m_red;
     double yg = y1.m_green - y2.m_green;
     double yb = y1.m_blue - y2.m_blue;
-    return sqrt(xr * xr + xg * xg + xb * xb + yr * yr + yg * yg + yb * yb);
+    return std::sqrt(xr * xr + xg * xg + xb * xb + yr * yr + yg * yg + yb * yb);
 }
 
-double SeamCarver::GetInversePixelEnergy(size_t rowId, size_t columnId) const
+SeamCarver::Seam SeamCarver::find(size_t width, size_t height, const std::function<double(size_t, size_t)> & energy) const
 {
-    return GetPixelEnergy(columnId, rowId);
+    std::vector<std::vector<double>> energies;
+    std::vector<std::vector<int>> ancestors;
+    for (size_t col = 0; col < width; col++) {
+        energies.push_back(std::vector<double>());
+        ancestors.push_back(std::vector<int>());
+        for (size_t row = 0; row < height; row++) {
+            energies[col].push_back(0.0);
+            ancestors[col].push_back(0);
+        }
+    }
+    for (size_t row = 0; row < height; row++) {
+        energies[0][row] = energy(0, row);
+        ancestors[0][row] = 0;
+    }
+    for (size_t col = 1; col < width; col++) {
+        for (size_t row = 0; row < height; row++) {
+            double temp = energies[col - 1][row];
+            double tempanc = row;
+            if (row > 0 && energies[col - 1][row - 1] < temp) {
+                temp = energies[col - 1][row - 1];
+                tempanc = row - 1;
+            }
+            if (row < height - 1 && energies[col - 1][row + 1] < temp) {
+                temp = energies[col - 1][row + 1];
+                tempanc = row + 1;
+            }
+            energies[col][row] = temp + energy(col, row);
+            ancestors[col][row] = tempanc;
+        }
+    }
+    int res = std::min_element(energies[width - 1].begin(), energies[width - 1].end()) - energies[width - 1].begin();
+    Seam resseam;
+    while (resseam.size() < width) {
+        resseam.push_back(res);
+        res = ancestors[width - resseam.size()][res];
+    }
+    std::reverse(resseam.begin(), resseam.end());
+    return resseam;
 }
 
 SeamCarver::Seam SeamCarver::FindHorizontalSeam() const
 {
-    find(GetImageWidth(), GetImageHeight(), GetPixelEnergy);
+    return find(GetImageWidth(), GetImageHeight(), [this](size_t x, size_t y) { return GetPixelEnergy(x, y); });
 }
 
 SeamCarver::Seam SeamCarver::FindVerticalSeam() const
 {
-    find(GetImageHeight(), GetImageWidth(), GetInversePixelEnergy);
+    return find(GetImageHeight(), GetImageWidth(), [this](size_t x, size_t y) { return GetPixelEnergy(y, x); });
 }
 
 void SeamCarver::RemoveHorizontalSeam(const Seam & seam)

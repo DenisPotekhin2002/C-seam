@@ -31,6 +31,8 @@ public:
      */
     double GetPixelEnergy(size_t columnId, size_t rowId) const;
 
+    double GetInversePixelEnergy(size_t rowId, size_t columnId) const;
+
     /**
      * Returns sequence of pixel row indexes (y)
      * (x indexes are [0:W-1])

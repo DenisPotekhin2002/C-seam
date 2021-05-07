@@ -1,6 +1,7 @@
 #include "Image.h"
 #include "SeamCarver.h"
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 
@@ -37,7 +38,59 @@ void WriteImageToCSV(const SeamCarver & carver, std::ofstream & output)
 
 int main(int argc, char * argv[])
 {
-    std::cerr << "here" << std::endl;
+    //something like a regression test
+    // (mistake in previous version was caused by initializing res as int instead of double)
+    // here is a part of algorithm, which is identical to the algorithm I use in SeamCarver to find a vertical seam
+    std::vector<std::vector<double>> GetPixelEnergy = {{167, 140.64494303031304, 270, 214, 185, 143.89232085139221, 173}, {119.17214439624723, 205, 165, 165, 251, 115.21284650593439, 173}};
+    std::vector<std::vector<double>> energies;
+    std::vector<std::vector<std::vector<size_t>>> seams;
+    double GetImageHeight = 2;
+    double GetImageWidth = 7;
+    for (size_t row = 0; row < GetImageHeight; row++) {
+        energies.push_back(std::vector<double>());
+        seams.push_back(std::vector<std::vector<size_t>>());
+        for (size_t col = 0; col < GetImageWidth; col++) {
+            energies[row].push_back(0.0);
+            seams[row].push_back(std::vector<size_t>());
+        }
+    }
+    for (size_t col = 0; col < GetImageWidth; col++) {
+        energies[0][col] = GetPixelEnergy[0][col];
+        seams[0][col].push_back(col);
+    }
+    for (size_t row = 1; row < GetImageHeight; row++) {
+        for (size_t col = 0; col < GetImageWidth; col++) {
+            double temp = energies[row - 1][col];
+            std::vector tempseam = seams[row - 1][col];
+            if (col > 0 && energies[row - 1][col - 1] < temp) {
+                temp = energies[row - 1][col - 1];
+                tempseam = seams[row - 1][col - 1];
+            }
+            if (col < GetImageWidth - 1 && energies[row - 1][col + 1] < temp) {
+                temp = energies[row - 1][col + 1];
+                tempseam = seams[row - 1][col + 1];
+            }
+            energies[row][col] = temp + GetPixelEnergy[row][col];
+            seams[row][col] = tempseam;
+            seams[row][col].push_back(col);
+        }
+    }
+    std::cerr << "Energy map:" << std::endl;
+    for (const auto & i : energies) {
+        for (const auto j : i) {
+            std::cerr << j << " ";
+        }
+        std::cerr << std::endl;
+    }
+    double res = std::min_element(energies[GetImageHeight - 1].begin(), energies[GetImageHeight - 1].end()) - energies[GetImageHeight - 1].begin();
+    std::vector<size_t> resseam = seams[GetImageHeight - 1][res];
+    std::cerr << "seam: ";
+    for (const auto i : resseam) {
+        std::cerr << i << " ";
+    }
+    std::cerr << std::endl;
+    //the end of regression test, start of main
+
     // Check command line arguments
     const size_t expectedAmountOfArgs = 3;
     if (argc != expectedAmountOfArgs) {
@@ -58,11 +111,6 @@ int main(int argc, char * argv[])
         for (size_t i = 0; i < pixelsToDelete; ++i) {
             std::vector<size_t> seam = carver.FindVerticalSeam();
             carver.RemoveVerticalSeam(seam);
-            std::cout << "width = " << carver.GetImageWidth() << ", height = " << carver.GetImageHeight() << std::endl;
-        }
-        for (size_t i = 0; i < pixelsToDelete; ++i) {
-            std::vector<size_t> seam = carver.FindHorizontalSeam();
-            carver.RemoveHorizontalSeam(seam);
             std::cout << "width = " << carver.GetImageWidth() << ", height = " << carver.GetImageHeight() << std::endl;
         }
         std::ofstream outputFile(argv[2]);

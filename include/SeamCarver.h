@@ -2,6 +2,8 @@
 
 #include "Image.h"
 
+#include <functional>
+
 class SeamCarver
 {
     using Seam = std::vector<size_t>;
@@ -42,6 +44,8 @@ public:
      * (y indexes are [0:H-1])
      */
     Seam FindVerticalSeam() const;
+
+    Seam find(size_t width, size_t height, const std::function<double(size_t, size_t)> & energy) const;
 
     /**
      * Removes sequence of pixels from the image

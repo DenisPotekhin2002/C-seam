@@ -1,10 +1,11 @@
 #include "Image.h"
 #include "SeamCarver.h"
 
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 
-static std::vector<std::vector<Image::Pixel>> ReadImageFromCSV(std::ifstream & input)
+std::vector<std::vector<Image::Pixel>> ReadImageFromCSV(std::ifstream & input)
 {
     size_t width, height;
     input >> width >> height;
@@ -21,7 +22,7 @@ static std::vector<std::vector<Image::Pixel>> ReadImageFromCSV(std::ifstream & i
     return table;
 }
 
-static void WriteImageToCSV(const SeamCarver & carver, std::ofstream & output)
+void WriteImageToCSV(const SeamCarver & carver, std::ofstream & output)
 {
     const size_t width = carver.GetImageWidth();
     const size_t height = carver.GetImageHeight();
@@ -35,8 +36,35 @@ static void WriteImageToCSV(const SeamCarver & carver, std::ofstream & output)
     }
 }
 
+void regressiontest()
+{
+    const Image test({{{186, 73, 178}, {50, 93, 116}, {252, 102, 248}}, {{237, 102, 135}, {64, 174, 101}, {247, 9, 24}}, {{153, 109, 248}, {148, 123, 173}, {31, 158, 239}}, {{125, 81, 34}, {179, 100, 40}, {59, 156, 206}}, {{252, 199, 253}, {38, 117, 54}, {220, 120, 156}}});
+    SeamCarver carver(test);
+    std::vector<size_t> hor = carver.FindHorizontalSeam();
+    std::vector<size_t> vert = carver.FindVerticalSeam();
+    std::cout << "energyMap : " << std::endl;
+    for (size_t i = 0; i < test.m_table.size(); i++) {
+        for (size_t j = 0; j < test.m_table[0].size(); j++) {
+            std::cout << carver.GetPixelEnergy(i, j) << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << "horSeam : ";
+    for (const auto i : hor) {
+        std::cout << i << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "vertSeam : ";
+    for (const auto i : vert) {
+        std::cout << i << " ";
+    }
+    std::cout << std::endl;
+}
+
 int main(int argc, char * argv[])
 {
+    //regressiontest();
+
     // Check command line arguments
     const size_t expectedAmountOfArgs = 3;
     if (argc != expectedAmountOfArgs) {
